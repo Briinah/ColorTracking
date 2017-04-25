@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Xml;
 using Emgu.CV;
 using Emgu.CV.Structure;
 using Emgu.CV.Util;
@@ -18,16 +19,38 @@ namespace ColorTracking
         enum Color { Blue, Green, Yellow };
         Color filter = Color.Blue;
 
+        private int lowSaturation;
+        private int lowValue;
+
+        Point blueCircle;
+        Point yellowCircle;
+        Point greenCircle;
+
+        XmlDocument config;
+
         public CameraCapture()
         {
             InitializeComponent();
+            config = new XmlDocument();
+            config.Load(Application.StartupPath + "/config.xml");
+
+            lowSaturation = int.Parse(config.SelectSingleNode("color/S").InnerText);
+            lowValue = int.Parse(config.SelectSingleNode("color/V").InnerText);
+
+            Saturation_bar.Value = lowSaturation;
+            Value_bar.Value = lowValue;
+
+            blueCircle = new Point();
+            yellowCircle = new Point();
+            greenCircle = new Point();
         }
 
         private void ProcessFrame(object senter, EventArgs arg)
         {
             Image<Bgr, byte> ImageFrame = capture.QueryFrame().ToImage<Bgr,Byte>();
-            CvInvoke.MedianBlur(ImageFrame, ImageFrame, 3);
-            Image<Hsv, byte> hsvImage = ImageFrame.Convert<Hsv, Byte>();
+            Image<Bgr, byte> filterImage = new Image<Bgr, byte>(ImageFrame.Size);
+            CvInvoke.BilateralFilter(ImageFrame, filterImage, 9, 80, 150);
+            Image<Hsv, byte> hsvImage = filterImage.Convert<Hsv, Byte>();
             
             // red circle
             //Image<Gray, byte> redImage = ThresholdImage(hsvImage, new Point[] { new Point(0, 10), new Point(163, 179) });
@@ -41,6 +64,11 @@ namespace ColorTracking
             // yellow circle
             Image<Gray, byte> yellowImage = ThresholdImage(hsvImage, new Point[] { new Point(20, 40) });
 
+            //CamImgBox.Image = DetectAndDrawCircles(redImage, ImageFrame, new MCvScalar(50, 50, 150));
+            var temp = DetectAndDrawCircles(blueImage, ImageFrame, new MCvScalar(150, 50, 0));
+            var temp2 = DetectAndDrawCircles(yellowImage, temp, new MCvScalar(0, 200, 200));
+            CamImgBox.Image = DetectAndDrawCircles(greenImage, temp2, new MCvScalar(50, 150, 0));
+
             switch(filter)
             {
                 case Color.Blue: outImgBox.Image = blueImage;
@@ -53,11 +81,6 @@ namespace ColorTracking
                     break;
 
             }
-
-            //CamImgBox.Image = DetectAndDrawCircles(redImage, ImageFrame, new MCvScalar(50, 50, 150));
-            var temp = DetectAndDrawCircles(blueImage, ImageFrame, new MCvScalar(150, 50, 0));
-            var temp2 = DetectAndDrawCircles(yellowImage, temp, new MCvScalar(0, 200, 200));
-            CamImgBox.Image = DetectAndDrawCircles(greenImage, temp2, new MCvScalar(50, 150, 0));
         }
 
         private Image<Gray,byte> ThresholdImage(Image<Hsv,byte> original, Point[] ranges)
@@ -65,7 +88,7 @@ namespace ColorTracking
             List<Image<Gray, byte>> images = new List<Image<Gray, byte>>();
             for(int i = 0; i < ranges.Length; i++)
             {
-                images.Add(original.InRange(new Hsv(ranges[i].X, 70, 100), new Hsv(ranges[i].Y, 255, 255)));
+                images.Add(original.InRange(new Hsv(ranges[i].X, lowSaturation, lowValue), new Hsv(ranges[i].Y, 255, 255)));
             }
 
             Image<Gray, byte> threshold = new Image<Gray, byte>(original.Size);
@@ -78,34 +101,40 @@ namespace ColorTracking
 
             Image<Gray, byte> temp = threshold.Clone();
             var element = CvInvoke.GetStructuringElement(Emgu.CV.CvEnum.ElementShape.Cross, new Size(3, 3), new Point(-1, -1));
-            for (int n = 0; n < 50; n++)
-            {
-                // opening
-                CvInvoke.Erode(threshold, temp, element, new Point(-1, -1), 1, Emgu.CV.CvEnum.BorderType.Reflect, default(MCvScalar));
-                CvInvoke.Dilate(temp, threshold, element, new Point(-1, -1), 1, Emgu.CV.CvEnum.BorderType.Reflect, default(MCvScalar));
-            }
+
+            // opening
+            CvInvoke.Erode(threshold, temp, element, new Point(-1, -1), 3, Emgu.CV.CvEnum.BorderType.Reflect, default(MCvScalar));
+            CvInvoke.Dilate(temp, threshold, element, new Point(-1, -1), 2, Emgu.CV.CvEnum.BorderType.Reflect, default(MCvScalar));
+
+            //// closing
+            //CvInvoke.Dilate(threshold, temp, element, new Point(-1, -1), 2, Emgu.CV.CvEnum.BorderType.Reflect, default(MCvScalar));
+            //CvInvoke.Erode(temp, threshold, element, new Point(-1, -1), 2, Emgu.CV.CvEnum.BorderType.Reflect, default(MCvScalar));
+
             return threshold;
         }
 
         private Image<Bgr,byte> DetectAndDrawCircles(Image<Gray, byte> binaryImage, Image<Bgr,byte> imageFrame, MCvScalar color)
         {
-            // detect circles
-            CircleF[] circles = CvInvoke.HoughCircles(binaryImage, Emgu.CV.CvEnum.HoughType.Gradient, 2, binaryImage.Rows / 8, 100, 50, 0, 100);
+            //// detect circles
+            //CircleF[] circles = CvInvoke.HoughCircles(binaryImage, Emgu.CV.CvEnum.HoughType.Gradient, 2, binaryImage.Rows / 8, 100, 50, 0, 100);
             Image<Bgr, byte> temp = imageFrame.Clone();
 
-            // draw circles
-            if (circles.Length > 0)
-            {
-                Console.WriteLine(circles.Length);
-                for (int current = 0; current < circles.Length; ++current)
-                {
-                    Point center = Point.Round(circles[current].Center);
-                    int radius = (int)Math.Round(circles[current].Radius);
+            VectorOfVectorOfPoint contours = new VectorOfVectorOfPoint();
+            CvInvoke.FindContours(binaryImage, contours, null, Emgu.CV.CvEnum.RetrType.External, Emgu.CV.CvEnum.ChainApproxMethod.ChainApproxSimple);
 
-                    CvInvoke.Circle(temp, center, radius, color, 3);
+            for(int i = 0; i < contours.Size; i++)
+            {
+                MCvMoments moment = CvInvoke.Moments(contours[i]);
+                double area = moment.M00;
+
+                if(area > 400)
+                {
+                    MCvPoint2D64f position = new MCvPoint2D64f(moment.M10 / area, moment.M01/area);
+
+                    CvInvoke.Circle(temp, new Point((int)position.X, (int)position.Y), 2, color, 3);
+                    CvInvoke.DrawContours(temp, contours, i, color, 4);
                 }
             }
-
             return temp;
         }
 
@@ -158,6 +187,18 @@ namespace ColorTracking
         private void btnYellow_Click(object sender, EventArgs e)
         {
             filter = Color.Yellow;
+        }
+
+        private void Saturation_bar_Scroll(object sender, EventArgs e)
+        {
+            lowSaturation = Saturation_bar.Value;
+            config.SelectSingleNode("color/S").InnerText = lowSaturation.ToString();
+        }
+
+        private void Value_bar_Scroll(object sender, EventArgs e)
+        {
+            lowValue = Value_bar.Value;
+            config.SelectSingleNode("color/V").InnerText = lowValue.ToString();
         }
     }
 }

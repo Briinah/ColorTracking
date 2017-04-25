@@ -35,8 +35,14 @@
             this.btnBlue = new System.Windows.Forms.Button();
             this.btnGreen = new System.Windows.Forms.Button();
             this.btnYellow = new System.Windows.Forms.Button();
+            this.Saturation_bar = new System.Windows.Forms.TrackBar();
+            this.Value_bar = new System.Windows.Forms.TrackBar();
+            this.label2 = new System.Windows.Forms.Label();
+            this.label3 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.CamImgBox)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.outImgBox)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.Saturation_bar)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.Value_bar)).BeginInit();
             this.SuspendLayout();
             // 
             // CamImgBox
@@ -97,11 +103,55 @@
             this.btnYellow.UseVisualStyleBackColor = true;
             this.btnYellow.Click += new System.EventHandler(this.btnYellow_Click);
             // 
+            // Saturation_bar
+            // 
+            this.Saturation_bar.Location = new System.Drawing.Point(1187, 12);
+            this.Saturation_bar.Maximum = 255;
+            this.Saturation_bar.Name = "Saturation_bar";
+            this.Saturation_bar.Orientation = System.Windows.Forms.Orientation.Vertical;
+            this.Saturation_bar.Size = new System.Drawing.Size(45, 423);
+            this.Saturation_bar.TabIndex = 9;
+            this.Saturation_bar.TickFrequency = 20;
+            this.Saturation_bar.Scroll += new System.EventHandler(this.Saturation_bar_Scroll);
+            // 
+            // Value_bar
+            // 
+            this.Value_bar.Location = new System.Drawing.Point(1240, 12);
+            this.Value_bar.Maximum = 255;
+            this.Value_bar.Name = "Value_bar";
+            this.Value_bar.Orientation = System.Windows.Forms.Orientation.Vertical;
+            this.Value_bar.Size = new System.Drawing.Size(45, 423);
+            this.Value_bar.TabIndex = 10;
+            this.Value_bar.TickFrequency = 20;
+            this.Value_bar.Scroll += new System.EventHandler(this.Value_bar_Scroll);
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(1191, 449);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(14, 13);
+            this.label2.TabIndex = 12;
+            this.label2.Text = "S";
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Location = new System.Drawing.Point(1243, 449);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(14, 13);
+            this.label3.TabIndex = 13;
+            this.label3.Text = "V";
+            // 
             // CameraCapture
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1145, 488);
+            this.ClientSize = new System.Drawing.Size(1312, 492);
+            this.Controls.Add(this.label3);
+            this.Controls.Add(this.label2);
+            this.Controls.Add(this.Value_bar);
+            this.Controls.Add(this.Saturation_bar);
             this.Controls.Add(this.btnYellow);
             this.Controls.Add(this.btnGreen);
             this.Controls.Add(this.btnBlue);
@@ -112,7 +162,10 @@
             this.Text = "Camera Output";
             ((System.ComponentModel.ISupportInitialize)(this.CamImgBox)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.outImgBox)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.Saturation_bar)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.Value_bar)).EndInit();
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -124,6 +177,10 @@
         private System.Windows.Forms.Button btnBlue;
         private System.Windows.Forms.Button btnGreen;
         private System.Windows.Forms.Button btnYellow;
+        private System.Windows.Forms.TrackBar Saturation_bar;
+        private System.Windows.Forms.TrackBar Value_bar;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Label label3;
     }
 }
 
